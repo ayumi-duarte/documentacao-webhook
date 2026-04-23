@@ -4,14 +4,14 @@
 Este documento mapeia os eventos recebidos via Webhook da Meta para o WhatsApp Business API. Aqui é detalhado os payloads esperados e as regras de negócio associadas a cada evento.
 
 ## 📑 Sumário
-* [🏗️ Estrutura Padrão](#-estrutura-padrao)
-* [📩 Mensagens de Usuário](#-mensagens-de-usuario)
-* [⚙️ Eventos da Conta (WABA)](#-eventos-da-conta-waba)
-* [📊 Account Update](#-account-update)
+* 🏗️ Estrutura Padrão
+* 📩 Mensagens de Usuário
+* ⚙️ Eventos da Conta (WABA)
+* 📊 Account Update
 
 ---
 
-## 01. 🏗️ Estrutura Padrao
+## 01. 🏗️ Estrutura Padrão
 Independentemente do evento, a Meta sempre enviará a requisição em um formato padrão.
 
 ``` json
@@ -37,7 +37,9 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
   ]
 }
 ```
-## 02. 📩 Mensagens de Usuario (Inbound)
+---
+
+## 02. 📩 Mensagens de Usuário (Inbound)
 
 ### 02.1 Mensagem de mídia (imagem, audio, video, documento)
 **Quando acontece:** O usuário envia um arquivo.
