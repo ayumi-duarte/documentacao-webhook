@@ -40,7 +40,7 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
   ]
 }
 ```
-### Mensagem de mídia (imagem, audio, video, documento)
+## Mensagem de mídia (imagem, audio, video, documento)
 **Quando acontece:** O usuário envia um arquivo.
 
 **Exemplo de Payload recebido (Exemplo de Imagem):**
@@ -61,9 +61,16 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
   ]
 }
 ```
->Nota: o acordo muda de acordo com o tipo de media em *type*. Se for áudio, virá "type": "audio" e um objeto "audio": { "id": "..." }. Se for documento, "type": "document" e assim por diante. O comportamento de download via ID é o mesmo para todos.
+>Nota: o payload se adapta dinamicamente de acordo com o campo type recebido. O comportamento de download utilizando o id da mídia é exatamente o mesmo para todos os formatos.
 
-### Mensagens interativas (botões e listas)
+#### Abaixo estão os tipos de mídia que podemos receber:
+- audio: Arquivo de áudio gravado ou enviado como MP3/Ogg. O objeto principal será "audio": { "id": "...", "mime_type": "..." }.
+- document: Qualquer documento generalizado, como PDFs ou planilhas. O objeto principal será "document": { "id": "...", "filename": "...", "mime_type": "..." }.
+- image: Arquivos de imagem (JPEG/PNG). O objeto principal será "image": { "id": "...", "mime_type": "...", "sha256": "..." }.
+- video: Vídeos em formato MP4. O objeto principal será "video": { "id": "...", "mime_type": "...", "sha256": "..." }.
+- sticker: Figurinhas do WhatsApp. O objeto principal será "sticker": { "id": "...", "mime_type": "...", "animated": true }.
+
+## Mensagens interativas (botões e listas)
 **Quando acontece:** O usuário interage com uma mensagem estruturada que nós enviamos, clicando em um botão de resposta rápida ou selecionando uma opção em um menu de lista.
 
 **Regra de Negócio:**
@@ -89,7 +96,7 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
   ]
 }
 ```
-### Localização e contatos
+## Localização e contatos
 **Quando acontece:** O usuário compartilha uma localização (mapa) ou um cartão de contato (vCard) pelo anexo do WhatsApp.
 
 **Regra de Negócio:**
@@ -116,7 +123,7 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
 ```
 >Nota: Se o usuário enviar um contato, o type será "contacts", e o JSON trará um array com os dados (nome, telefones, etc.).
 
-### Reações
+## Reações
 **Quando acontece:** O usuário reage a uma mensagem nossa com um emoji.
 
 **Regra de Negócio:**
@@ -141,13 +148,13 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
 ```
 ---
 
-### Eventos da Conta (WABA)
+## Eventos da Conta (WABA)
 
 Aqui entram as notificações globais da conta do WhatsApp Business.
 
 >Nota: O webhook no painel da Meta precisa estar inscrito no evento `message_template_status_update`. Se a caixa do `messages` for a única marcada, esses eventos não vão chegar no servidor.
 
-### Atualização de Status de Templates
+## Atualização de Status de Templates
 **Quando acontece:** A Meta avisa se um template criado pelo nosso time foi aprovado, reprovado ou desativado.
 
 **O que sistema tem que fazer:**
@@ -178,7 +185,7 @@ Aqui entram as notificações globais da conta do WhatsApp Business.
   ]
 }
 ```
-### Segurança e Validação de Origem
+## Segurança e Validação de Origem
 
 Como a URL do webhook precisa ficar exposta na internet para a Meta acessar, precisamos garantir que quem está mandando o `POST` é realmente o WhatsApp e não alguém de fora.
 
@@ -192,7 +199,7 @@ A Meta não envia tokens de autenticação no corpo da mensagem. Em vez disso, e
 4. Comparar o hash gerado com o que veio no header da Meta. 
 5. Se os hashes não baterem, o servidor deve rejeitar imediatamente.
 
-### Verificação do Webhook (Hub Challenge)
+## Verificação do Webhook (Hub Challenge)
 
 Antes da Meta começar a enviar as mensagens (via `POST`), ela precisa ter certeza de que a URL que colocamos no painel é válida. Isso é feito através de uma requisição de verificação.
 
@@ -210,7 +217,7 @@ Nesse `GET`, a Meta envia os seguintes parâmetros na query string (URL):
 3. Se for igual, o servidor deve responder com um *`HTTP 200 OK`* retornando **apenas** o valor exato do *`hub.challenge`* em texto puro.
 4. Se o token for diferente, retornar um *`HTTP 403 Forbidden`*.
 
-### Idempotência e Resposta Rápida (Lidando com Duplicatas)
+## Idempotência e Resposta Rápida (Lidando com Duplicatas)
 
 A arquitetura de webhooks da Meta garante que a notificação será enviada *pelo menos uma vez*. Isso significa que, por oscilações de rede ou atrasos, **é comum recebermos o mesmo payload repetido**. 
 
@@ -220,5 +227,17 @@ Além disso, a Meta exige que o nosso servidor responda com um *`HTTP 200 OK`* q
 1. **Responder primeiro, processar depois:** Assim que o `POST` bater no webhook e passar na verificação de segurança, devolva um *`HTTP 200 OK`* imediatamente. Jogue o payload para uma fila assíncrona para lidar com ele depois.
 2. **Checar a chave única (Idempotência):** Antes de processar a mensagem ou o status, o sistema deve buscar no banco de dados se aquele `id` já foi processado.
    * Para mensagens e status, a chave única é sempre o `id` (que começa com `wamid.`).
+
+---
+
+## Account Update
+Diferente dos eventos de mensagens, ele avisa o sistema exclusivamente sobre mudanças na infraestrutura e no status do nosso número no WhatsApp Business API.
+
+#### O que monitoramos com ele:
+- **Status do Número:** Avisos de aprovação, banimento permanente ou restrições de envio.
+- **Qualidade da Conta:** Alertas cruciais se a qualidade do número cair para médio (amarelo) ou baixo (vermelho) devido a um alto volume de bloqueios ou denúncias de clientes.
+- **Limites de Envio (Messaging Limits):** Atualizações automáticas sobre aumentos ou reduções na nossa capacidade de iniciar conversas a cada 24 horas.
+
+
 
 
