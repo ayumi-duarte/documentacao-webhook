@@ -74,7 +74,7 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
 **Quando acontece:** O usuário interage com uma mensagem estruturada que nós enviamos, clicando em um botão de resposta rápida ou selecionando uma opção em um menu de lista.
 
 **Regra de Negócio:**
-* *(Ex: O sistema deve mapear o `interactive.button_reply.id` ou `interactive.list_reply.id` para avançar a etapa do cliente no fluxo do chatbot de forma exata.*
+* *(Ex: O sistema deve mapear o `interactive.button_reply.id` ou `interactive.list_reply.id` para avançar a etapa do cliente no fluxo do chatbot de forma exata.)*
 
 **Exemplo de Payload recebido (Exemplo de clique em Botão):**
 ```json
@@ -157,7 +157,7 @@ Aqui entram as notificações globais da conta do WhatsApp Business.
 ## Atualização de Status de Templates
 **Quando acontece:** A Meta avisa se um template criado pelo nosso time foi aprovado, reprovado ou desativado.
 
-**O que sistema tem que fazer:**
+**O que o sistema tem que fazer:**
 * Pegar o `message_template_id` e atualizar o status no banco de dados.
 * Se vier `APPROVED`, liberar o template
 * Se vier `REJECTED` ou `FLAGGED`, bloquear o uso e avisar.
@@ -243,9 +243,9 @@ O webhook account_update é acionado nos seguintes cenários, divididos por cate
 
 #### 1. Verificação e Status da Conta
 - **Análise de empresa:** quando o envio de verificação conduzido por um parceiro é aprovado, rejeitado ou descartado.
-- **Ciclo de vida:** quando uma conta do WhatsApp Business é excluida.
+- **Ciclo de vida:** quando uma conta do WhatsApp Business é excluída.
 -  **Conformidade:** quando a conta viola políticas ou termos da Meta, ou sofre restrições devido a ações de aplicação (account restrictions).
--  **Termos:** quando a empresa aceita os Termos de Serviço da API de mensagens multi-dispositivo(MM).
+-  **Termos:** quando a empresa aceita os Termos de Serviço da API de mensagens multi-dispositivo (MM).
 
 #### 2. Acessos e Permissões
 - **Parceiros:** quando a conta é compartilhada ou deixa de ser compartilhada com um parceiro.
@@ -254,11 +254,11 @@ O webhook account_update é acionado nos seguintes cenários, divididos por cate
 
 #### 3. Configurações Comerciais e Preços
 - **Localização:** quando o ponto comercial principal da conta é definido.
-- **Financeiro:** quandoa  conta se qualifica para taxas internacionais de autenticação ou quando o nível de preços baseado em volume é atualizado.
+- **Financeiro:** quando a conta se qualifica para taxas internacionais de autenticação ou quando o nível de preços baseado em volume é atualizado.
 
 #### 4. Registro e Dispositivos
-- **Migração:** quando uma conta é removida devido uma mudança de dispositivo ou novo registro de número de telefone.
-- **Reconexão:** quando a conta é reconectada após essa mudança de dispositivo ou registro
+- **Migração:** quando uma conta é removida devido a uma mudança de dispositivo ou novo registro de número de telefone.
+- **Reconexão:** quando a conta é reconectada após essa mudança de dispositivo ou registro.
 
 ### Referência de campos
 Abaixo estão todos os campos possíveis que podem ser retornados:
@@ -275,9 +275,9 @@ Abaixo estão todos os campos possíveis que podem ser retornados:
 Abaixo estão as integrações de dados para mapear os sub-objetos:
 
 1. **Objeto phone_number_details**
-   Usado quando gatilho envolve a verificação ou atualização de um número.
+   Usado quando o gatilho envolve a verificação ou atualização de um número.
    - `display_phone_number` (string): o número de telefone formatado.
-   - `event` (string): o novo status do número. Valores comuns: `PENDING`, `VERIFIED`, `UPGRADE`.
+   - `event` (string): o novo status do número. Valores comuns: `PENDING`, `VERIFIED`, `UPGRADED`.
 2. **Objeto ban_info**
    Essencial para monitorar bloqueios de segurança.
    - `event` (string): o status do banimento. Valores: `BAN_ADDED`, `BAN_REMOVED`.
