@@ -15,7 +15,7 @@ Este documento mapeia os eventos recebidos via Webhook da Meta para o WhatsApp B
 ---
 
 ## Estrutura Padrão
-Independentemente do evento, a Meta sempre enviará a requisição em um formato padrão. A diferença entre uma mensagem recebida.
+Independentemente do evento, a Meta sempre enviará a requisição em um formato padrão.
 
 ``` json
 {
@@ -231,13 +231,78 @@ Além disso, a Meta exige que o nosso servidor responda com um *`HTTP 200 OK`* q
 ---
 
 ## Account Update
-Diferente dos eventos de mensagens, ele avisa o sistema exclusivamente sobre mudanças na infraestrutura e no status do nosso número no WhatsApp Business API.
+O webhook de account_update é enviado sempre que há uma alteração no status ou nas informações da sua WhatsApp Business Account (WBA). Ele é crucial para monitorar se a sua conta está ativa, se foi banida ou se passou em revisões da Meta.
 
-#### O que monitoramos com ele:
-- **Status do Número:** Avisos de aprovação, banimento permanente ou restrições de envio.
-- **Qualidade da Conta:** Alertas cruciais se a qualidade do número cair para médio (amarelo) ou baixo (vermelho) devido a um alto volume de bloqueios ou denúncias de clientes.
-- **Limites de Envio (Messaging Limits):** Atualizações automáticas sobre aumentos ou reduções na nossa capacidade de iniciar conversas a cada 24 horas.
+#### Quando este evento acontece?
+- Mudanças no status de revisão da conta (aprovada/rejeitada).
+- Desativação ou restrição da conta por violação de políticas.
+- Atualização de detalhes do número de telefone associado.
 
+### Gatilhos:
+O webhook account_update é acionado nos seguintes cenários, divididos por categorias:
+
+#### 1. Verificação e Status da Conta
+- **Análise de empresa:** quando o envio de verificação conduzido por um parceiro é aprovado, rejeitado ou descartado.
+- **Ciclo de vida:** quando uma conta do WhatsApp Business é excluida.
+-  **Conformidade:** quando a conta viola políticas ou termos da Meta, ou sofre restrições devido a ações de aplicação (account restrictions).
+-  **Termos:** quando a empresa aceita os Termos de Serviço da API de mensagens multi-dispositivo(MM).
+
+#### 2. Acessos e Permissões
+- **Parceiros:** quando a conta é compartilhada ou deixa de ser compartilhada com um parceiro.
+- **Apps:** quando um cliente empresarial concede ou revoga permissões de aplicativos para a conta.
+- **Anúncios:** quando a conta dá acesso ao parceiro para gerenciar contas de anúncios.
+
+#### 3. Configurações Comerciais e Preços
+- **Localização:** quando o ponto comercial principal da conta é definido.
+- **Financeiro:** quandoa  conta se qualifica para taxas internacionais de autenticação ou quando o nível de preços baseado em volume é atualizado.
+
+#### 4. Registro e Dispositivos
+- **Migração:** quando uma conta é removida devido uma mudança de dispositivo ou novo registro de número de telefone.
+- **Reconexão:** quando a conta é reconectada após essa mudança de dispositivo ou registro
+
+### Referência de campos
+Abaixo estão todos os campos possíveis que podem ser retornados:
+
+| Campo | Tipo | Descrição
+| :--- | :--- | :---|
+| `event` | string | **Obrigatório**. Indica a ação que disparou o webhook (Ex: `DISABLED`, `REVIEW_PASSED`). |
+| `phone_number_details` | object | Contém informações se o evento afetar um número de telefone específico. |
+| `ban_info` | object | Detalhes sobre banimentos aplicados à conta. |
+| `restriction_info` | object | Informações sobre restrições de integridade ou de envio aplicadas. |
+| `violation_info` | object | Detalhes sobre violações de políticas específicas. |
+
+### Detalhes de objetos aninhados
+Abaixo estão as integrações de dados para mapear os sub-objetos:
+
+1. **Objeto phone_number_details**
+   Usado quando gatilho envolve a verificação ou atualização de um número.
+   - `display_phone_number` (string): o número de telefone formatado.
+   - `event` (string): o novo status do número. Valores comuns: `PENDING`, `VERIFIED`, `UPGRADE`.
+2. **Objeto ban_info**
+   Essencial para monitorar bloqueios de segurança.
+   - `event` (string): o status do banimento. Valores: `BAN_ADDED`, `BAN_REMOVED`.
+   - `expiration` (string/timestamp): data e hora em que o banimento expira (se for temporário).
+3. **Objeto restriction_info**
+   Indica limites impostos à conta por baixa qualidade ou spam.
+   - `event` (string): status da restrição. Valores: `RESTRICTION_ADDED`, `RESTRICTION_REMOVED`.
+   - `type` (string): o tipo de restrição aplicada (Ex: Limite de mensagens por dia).
+   - `expiration` (string/timestamp): data prevista para o fim da restrição.
+
+### Lista completa de eventos (event)
+Estes são os valores exatos que a string event pode assumir. A aplicação deve estar preparada para:
+
+- `ACCOUNT_RESTRICTED`: A conta sofreu limitações de uso.
+- `ACCOUNT_UNRESTRICTED`: As restrições da conta foram removidas.
+- `DISABLED`: A conta foi desativada permanentemente ou até ação do suporte.
+- `REVIEW_PASSED`: A conta ou número passou na revisão comercial.
+- `REVIEW_FAILED`: A conta ou número foi reprovado na revisão.
+- `MESSAGE_LIMIT_CHANGED`: O limite de mensagens (Tier) do número foi alterado.
+- `ONBOARDING_COMPLETED`: A configuração inicial da conta foi finalizada com sucesso.
+- `VERIFIED_ACCOUNT`: A conta recebeu o selo de verificação oficial.
+
+⚠️ Notas de Implementação
+1. **Nulidade de Campos:** Nem todos os objetos (`ban_info`, `restriction_info`, etc.) estarão presentes simultaneamente. Sua lógica deve sempre verificar a existência da chave antes de tentar acessar o valor (ex: `if (value.ban_info) { ... }`).
+2. **Tratamento de Timestamps:** Os campos de `expiration` seguem o padrão *ISO 8601* ou *Unix Timestamp*. Certifique-se de converter para o fuso horário local da sua operação na documentação.
 
 
 
