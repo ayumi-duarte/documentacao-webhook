@@ -304,5 +304,71 @@ Estes são os valores exatos que a string event pode assumir. A aplicação deve
 1. **Nulidade de Campos:** Nem todos os objetos (`ban_info`, `restriction_info`, etc.) estarão presentes simultaneamente. Sua lógica deve sempre verificar a existência da chave antes de tentar acessar o valor (ex: `if (value.ban_info) { ... }`).
 2. **Tratamento de Timestamps:** Os campos de `expiration` seguem o padrão *ISO 8601* ou *Unix Timestamp*. Certifique-se de converter para o fuso horário local da sua operação na documentação.
 
+### Exemplos de payload (account_update)
+Abaixo estão os cenários mais críticos que o sistema pode receber.
 
-
+1. **Conta aprovada:** evento disparado quando a conta passa pela revisão comercial inicial.
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "SEU_WABA_ID",
+      "changes": [
+        {
+          "value": {
+            "event": "REVIEW_PASSED"
+          },
+          "field": "account_update"
+        }
+      ]
+    }
+  ]
+}
+```
+2. **Alteração de Limite de Mensagens (Com Detalhes do Número):** evento disparado quando o número ganha ou perde capacidade de envios diários. O campo `phone_number_details` é adicionado.
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "SEU_WABA_ID",
+      "changes": [
+        {
+          "value": {
+            "event": "MESSAGE_LIMIT_CHANGED",
+            "phone_number_details": {
+              "display_phone_number": "5511999999999",
+              "event": "UPGRADED"
+            }
+          },
+          "field": "account_update"
+        }
+      ]
+    }
+  ]
+}
+```
+3. **Conta Desativada / Banida (Com Informações de Banimento):** evento disparado quando a Meta bloqueia a conta. O sistema deve alertar imediatamente usando o objeto ban_info.
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "SEU_WABA_ID",
+      "changes": [
+        {
+          "value": {
+            "event": "DISABLED",
+            "ban_info": {
+              "event": "BAN_ADDED",
+              "expiration": "2026-05-01T12:00:00+0000"
+            }
+          },
+          "field": "account_update"
+        }
+      ]
+    }
+  ]
+}
+```
