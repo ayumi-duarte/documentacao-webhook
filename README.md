@@ -3,9 +3,15 @@
 ## 📌 Visão Geral
 Este documento mapeia os eventos recebidos via Webhook da Meta para o WhatsApp Business API. Aqui é detalhado os payloads esperados e as regras de negócio associadas a cada evento.
 
+## 📑 Sumário
+* [🏗️ Estrutura Padrão](#-estrutura-padrao)
+* [📩 Mensagens de Usuário](#-mensagens-de-usuario)
+* [⚙️ Eventos da Conta (WABA)](#-eventos-da-conta-waba)
+* [📊 Account Update](#-account-update)
+
 ---
 
-## 🏗️ Estrutura Padrão
+## 01. 🏗️ Estrutura Padrao
 Independentemente do evento, a Meta sempre enviará a requisição em um formato padrão.
 
 ``` json
@@ -31,7 +37,9 @@ Independentemente do evento, a Meta sempre enviará a requisição em um formato
   ]
 }
 ```
-## 📂 Mensagem de mídia (imagem, audio, video, documento)
+## 02. 📩 Mensagens de Usuario (Inbound)
+
+### 02.1 Mensagem de mídia (imagem, audio, video, documento)
 **Quando acontece:** O usuário envia um arquivo.
 
 **Tipos de mídia suportados:**
@@ -51,10 +59,10 @@ O webhook do WhatsApp permite o recebimento de diversos formatos de arquivos. Ab
 3. Consistência: O comportamento de download utilizando o `id` é idêntico para todos os formatos de mídia.
 4. Validação: Sempre valide o `mime_type` recebido antes de processar o arquivo, garantindo que ele está dentro dos formatos permitidos pelo seu servidor.
 
-#### **⚠️ Notas de Implementação**
+**⚠️ Notas de Implementação**
 O payload se adapta dinamicamente de acordo com o campo type recebido. A lógica de tratamento deve ser genérica o suficiente para extrair o `id` e o `mime_type` independentemente do formato.
 
-#### Exemplo de Payload recebido (Exemplo de Imagem):
+**Exemplo de Payload recebido (Exemplo de Imagem):**
 ```json
 {
   "messages": [
@@ -81,7 +89,7 @@ O payload se adapta dinamicamente de acordo com o campo type recebido. A lógica
 - video: O objeto principal será "video": { "id": "...", "mime_type": "...", "sha256": "..." }.
 - sticker: O objeto principal será "sticker": { "id": "...", "mime_type": "...", "animated": true }.
 
-## 💬 Mensagens interativas (botões e listas)
+### 02.2 Mensagens interativas (botões e listas)
 **Quando acontece:** O usuário interage com uma mensagem estruturada que nós enviamos, clicando em um botão de resposta rápida ou selecionando uma opção em um menu de lista.
 
 **Regra de Negócio:**
@@ -107,7 +115,7 @@ O payload se adapta dinamicamente de acordo com o campo type recebido. A lógica
   ]
 }
 ```
-## 📍 Localização e contatos
+### 02.3 Localização e contatos
 **Quando acontece:** O usuário compartilha uma localização (mapa) ou um cartão de contato (vCard) pelo anexo do WhatsApp.
 
 **Regra de Negócio:**
@@ -134,7 +142,7 @@ O payload se adapta dinamicamente de acordo com o campo type recebido. A lógica
 ```
 >Nota: Se o usuário enviar um contato, o type será "contacts", e o JSON trará um array com os dados (nome, telefones, etc.).
 
-## 👍 Reações
+### 02.4  Reações
 **Quando acontece:** O usuário reage a uma mensagem nossa com um emoji.
 
 **Regra de Negócio:**
@@ -159,13 +167,13 @@ O payload se adapta dinamicamente de acordo com o campo type recebido. A lógica
 ```
 ---
 
-## ⚙️ Eventos da Conta (WABA)
+## 03. ⚙️ Eventos da Conta (WABA)
 
 Aqui entram as notificações globais da conta do WhatsApp Business.
 
 >Nota: O webhook no painel da Meta precisa estar inscrito no evento `message_template_status_update`. Se a caixa do `messages` for a única marcada, esses eventos não vão chegar no servidor.
 
-## ✅ Atualização de Status de Templates
+### 03.1 Atualização de Status de Templates
 **Quando acontece:** A Meta avisa se um template criado pelo nosso time foi aprovado, reprovado ou desativado.
 
 **O que o sistema tem que fazer:**
@@ -196,7 +204,7 @@ Aqui entram as notificações globais da conta do WhatsApp Business.
   ]
 }
 ```
-## 🛡️ Segurança e Validação de Origem
+### 03.2 Segurança e Validação de Origem
 
 Como a URL do webhook precisa ficar exposta na internet para a Meta acessar, precisamos garantir que quem está mandando o `POST` é realmente o WhatsApp e não alguém de fora.
 
@@ -210,7 +218,7 @@ A Meta não envia tokens de autenticação no corpo da mensagem. Em vez disso, e
 4. Comparar o hash gerado com o que veio no header da Meta. 
 5. Se os hashes não baterem, o servidor deve rejeitar imediatamente.
 
-## 🔐 Verificação do Webhook (Hub Challenge)
+### 03.3 Verificação do Webhook (Hub Challenge)
 
 Antes da Meta começar a enviar as mensagens (via `POST`), ela precisa ter certeza de que a URL que colocamos no painel é válida. Isso é feito através de uma requisição de verificação.
 
@@ -228,7 +236,7 @@ Nesse `GET`, a Meta envia os seguintes parâmetros na query string (URL):
 3. Se for igual, o servidor deve responder com um *`HTTP 200 OK`* retornando **apenas** o valor exato do *`hub.challenge`* em texto puro.
 4. Se o token for diferente, retornar um *`HTTP 403 Forbidden`*.
 
-## ⚡ Idempotência e Resposta Rápida (Lidando com Duplicatas)
+### 03.4 Idempotência e Resposta Rápida (Lidando com Duplicatas)
 
 A arquitetura de webhooks da Meta garante que a notificação será enviada *pelo menos uma vez*. Isso significa que, por oscilações de rede ou atrasos, **é comum recebermos o mesmo payload repetido**. 
 
@@ -241,15 +249,15 @@ Além disso, a Meta exige que o nosso servidor responda com um *`HTTP 200 OK`* q
 
 ---
 
-## 📊 Account Update
+### 04. 📊 Account Update
 O webhook de account_update é enviado sempre que há uma alteração no status ou nas informações da sua WhatsApp Business Account (WBA). Ele é crucial para monitorar se a sua conta está ativa, se foi banida ou se passou em revisões da Meta.
 
-#### Quando este evento acontece?
+##### Quando este evento acontece?
 - Mudanças no status de revisão da conta (aprovada/rejeitada).
 - Desativação ou restrição da conta por violação de políticas.
 - Atualização de detalhes do número de telefone associado.
 
-### Gatilhos:
+### 04.1 Gatilhos:
 O webhook account_update é acionado nos seguintes cenários, divididos por categorias:
 
 #### 1. Verificação e Status da Conta
@@ -271,7 +279,7 @@ O webhook account_update é acionado nos seguintes cenários, divididos por cate
 - **Migração:** quando uma conta é removida devido a uma mudança de dispositivo ou novo registro de número de telefone.
 - **Reconexão:** quando a conta é reconectada após essa mudança de dispositivo ou registro.
 
-### Referência de campos
+### 04.2 Referência de campos
 Abaixo estão todos os campos possíveis que podem ser retornados:
 
 | Campo | Tipo | Descrição
@@ -282,7 +290,7 @@ Abaixo estão todos os campos possíveis que podem ser retornados:
 | `restriction_info` | object | Informações sobre restrições de integridade ou de envio aplicadas. |
 | `violation_info` | object | Detalhes sobre violações de políticas específicas. |
 
-### Detalhes de objetos aninhados
+### 04.3 Detalhes de objetos aninhados
 Abaixo estão as integrações de dados para mapear os sub-objetos:
 
 1. **Objeto phone_number_details**
@@ -299,7 +307,7 @@ Abaixo estão as integrações de dados para mapear os sub-objetos:
    - `type` (string): o tipo de restrição aplicada (Ex: Limite de mensagens por dia).
    - `expiration` (string/timestamp): data prevista para o fim da restrição.
 
-### Lista completa de eventos (event)
+### 04.4 Lista completa de eventos (event)
 Estes são os valores exatos que a string event pode assumir. A aplicação deve estar preparada para:
 
 - `ACCOUNT_RESTRICTED`: A conta sofreu limitações de uso.
@@ -315,7 +323,7 @@ Estes são os valores exatos que a string event pode assumir. A aplicação deve
 1. **Nulidade de Campos:** Nem todos os objetos (`ban_info`, `restriction_info`, etc.) estarão presentes simultaneamente. Sua lógica deve sempre verificar a existência da chave antes de tentar acessar o valor (ex: `if (value.ban_info) { ... }`).
 2. **Tratamento de Timestamps:** Os campos de `expiration` seguem o padrão *ISO 8601* ou *Unix Timestamp*. Certifique-se de converter para o fuso horário local da sua operação na documentação.
 
-### Exemplos de payload (account_update)
+### 04.5 Exemplos de payload (account_update)
 Abaixo estão os cenários mais críticos que o sistema pode receber.
 
 1. **Conta aprovada:** evento disparado quando a conta passa pela revisão comercial inicial.
